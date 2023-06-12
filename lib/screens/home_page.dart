@@ -1,14 +1,13 @@
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/platform_tags.dart';
 import 'package:solinski_app_flutter/screens/login_page.dart';
 
-const serverIp = 'http://localhost:8000';
+final serverIp = dotenv.get('API_URL');
 const storage = FlutterSecureStorage();
 
 class HomePage extends StatefulWidget {
@@ -39,30 +38,16 @@ class HomePageState extends State<HomePage> {
   void dispose() {
     super.dispose();
     FlutterNfcKit.finish();
-    // NfcManager.instance.stopSession();
   }
 
   Future<void> _startReading() async {
     try {
       final nfcTag = await FlutterNfcKit.poll();
-      // final result = await FlutterNfcKit.readNDEFRecords();
       setState(() {
         _cardData = nfcTag.id;
       });
-      // Start Session
-      // NfcManager.instance.startSession(
-      //   onDiscovered: (NfcTag tag) async {
-      //     NfcA? nfca = NfcA.from(tag);
-
-      //     if (nfca == null) {
-      //       print('Tag is not compatible with NfcA');
-      //       return;
-      //     }
-      //     print(nfca);
-      //   },
-      // );
     } catch (e) {
-      print('Error reading NFC: $e');
+      debugPrint('Error reading NFC: $e');
     }
   }
 
@@ -101,19 +86,32 @@ class HomePageState extends State<HomePage> {
         ],
       ),
       body: Center(
-        child: FutureBuilder(
-            future: http.read(Uri.parse('$serverIp/data'),
-                headers: {"Authorization": widget.jwt}),
-            builder: (context, snapshot) => snapshot.hasData
-                ? ElevatedButton(
-                    onPressed: _startReading,
-                    child: Text(
-                      'Hello World, $_cardData ${snapshot.data}',
-                    ),
-                  )
-                : snapshot.hasError
-                    ? const Text("An error occurred")
-                    : const CircularProgressIndicator()),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: _startReading,
+              child: const Text(
+                'Scan NFC tag ID',
+              ),
+            ),
+            Card(
+              margin: const EdgeInsets.only(top: 20),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+              ),
+              child: SizedBox(
+                width: 300,
+                height: 100,
+                child: Center(child: Text('NFC Tag scanned: $_cardData')),
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[

@@ -1,11 +1,13 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:solinski_app_flutter/screens/login_page.dart';
 import '../video_widget_file.dart';
 
+final serverIp = dotenv.get('API_URL');
 const storage = FlutterSecureStorage();
 
 class PreviewPage extends StatelessWidget {
@@ -19,9 +21,16 @@ class PreviewPage extends StatelessWidget {
     return jwt;
   }
 
-  void _deleteVideo() {
+  void displayDialog(context, title, text) => showDialog(
+        context: context,
+        builder: (context) =>
+            AlertDialog(title: Text(title), content: Text(text)),
+      );
+
+  void _deleteVideo(BuildContext context) {
     final file = File(video.path);
     file.deleteSync();
+    Navigator.pop(context);
   }
 
   void _uploadVideo(BuildContext context) async {
@@ -34,24 +43,24 @@ class PreviewPage extends StatelessWidget {
             context, MaterialPageRoute(builder: (context) => LoginPage()));
       }
 
-      const url =
-          'http://localhost:8000/upload'; // Replace with your Node.js server URL
       final file = File(video.path);
 
-      final request = http.MultipartRequest('POST', Uri.parse(url));
+      final request =
+          http.MultipartRequest('POST', Uri.parse('$serverIp/upload'));
       request.headers.putIfAbsent('Authorization', () => jwt);
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
       final response = await request.send();
       if (response.statusCode == 200) {
-        print('Video uploaded successfully');
+        debugPrint('Video uploaded successfully');
+        Navigator.pushReplacementNamed(context, '/videos');
       } else {
         print('Failed to upload video. Status code: ${response.statusCode}');
         Navigator.push(
             context, MaterialPageRoute(builder: (context) => LoginPage()));
       }
     } catch (e) {
-      print('Error uploading video: $e');
+      displayDialog(context, "An Error Occurred", "Error uploading video");
     }
   }
 
@@ -71,7 +80,8 @@ class PreviewPage extends StatelessWidget {
                 spacing: 50,
                 children: [
                   ElevatedButton(
-                      onPressed: _deleteVideo, child: const Text('Delete')),
+                      onPressed: () => _deleteVideo(context),
+                      child: const Text('Delete')),
                   ElevatedButton(
                       onPressed: () => _uploadVideo(context),
                       child: const Text('Save'))
@@ -79,7 +89,6 @@ class PreviewPage extends StatelessWidget {
               )
             ],
           ),
-          Text(video.path)
         ]),
       ),
     );

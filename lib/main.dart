@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'screens/home_page.dart';
 import 'screens/images_page.dart';
@@ -9,10 +10,10 @@ import 'screens/videos_page.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const severIp = 'http://localhost:8000';
 const storage = FlutterSecureStorage();
 
-void main() {
+Future<void> main() async {
+  await dotenv.load();
   runApp(const Root());
 }
 

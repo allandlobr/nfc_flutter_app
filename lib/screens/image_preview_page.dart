@@ -1,10 +1,12 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:solinski_app_flutter/screens/login_page.dart';
 
+final serverIp = dotenv.get('API_URL');
 const storage = FlutterSecureStorage();
 
 class PreviewPage extends StatelessWidget {
@@ -18,10 +20,19 @@ class PreviewPage extends StatelessWidget {
     return jwt;
   }
 
-  void _deleteImage() {
+  void _deleteImage(BuildContext context) async {
     final file = File(picture.path);
-    file.deleteSync();
+    if (await file.exists()) {
+      file.deleteSync();
+    }
+    Navigator.pop(context);
   }
+
+  void displayDialog(context, title, text) => showDialog(
+        context: context,
+        builder: (context) =>
+            AlertDialog(title: Text(title), content: Text(text)),
+      );
 
   void _uploadImage(BuildContext context) async {
     try {
@@ -33,24 +44,25 @@ class PreviewPage extends StatelessWidget {
             context, MaterialPageRoute(builder: (context) => LoginPage()));
       }
 
-      const url =
-          'http://localhost:8000/upload'; // Replace with your Node.js server URL
       final file = File(picture.path);
 
-      final request = http.MultipartRequest('POST', Uri.parse(url));
+      final request =
+          http.MultipartRequest('POST', Uri.parse('$serverIp/upload'));
       request.headers.putIfAbsent('Authorization', () => jwt);
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
       final response = await request.send();
       if (response.statusCode == 200) {
-        print('Image uploaded successfully');
+        debugPrint('Image uploaded successfully');
+        Navigator.pushReplacementNamed(context, '/images');
       } else {
-        print('Failed to upload image. Status code: ${response.statusCode}');
+        debugPrint(
+            'Failed to upload image. Status code: ${response.statusCode}');
         Navigator.push(
             context, MaterialPageRoute(builder: (context) => LoginPage()));
       }
     } catch (e) {
-      print('Error uploading image: $e');
+      displayDialog(context, "An Error Occurred", "Error uploading video");
     }
   }
 
@@ -69,7 +81,8 @@ class PreviewPage extends StatelessWidget {
                 spacing: 50,
                 children: [
                   ElevatedButton(
-                      onPressed: _deleteImage, child: const Text('Delete')),
+                      onPressed: () => _deleteImage(context),
+                      child: const Text('Delete')),
                   ElevatedButton(
                       onPressed: () => _uploadImage(context),
                       child: const Text('Save'))
@@ -77,7 +90,6 @@ class PreviewPage extends StatelessWidget {
               )
             ],
           ),
-          Text(picture.path)
         ]),
       ),
     );

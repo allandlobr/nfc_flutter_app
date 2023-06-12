@@ -1,13 +1,16 @@
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:camera/camera.dart' as camera;
+import 'package:solinski_app_flutter/screens/image_preview_page.dart';
 import 'package:solinski_app_flutter/screens/login_page.dart';
 
 import 'image_camera_page.dart';
 
-const serverIp = 'http://localhost:8000';
+final serverIp = dotenv.get('API_URL');
 const storage = FlutterSecureStorage();
 
 class ImagesPage extends StatefulWidget {
@@ -69,6 +72,25 @@ class ImagesPageState extends State<ImagesPage> {
     _setImagesUrls();
   }
 
+  void pickImage() async {
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(type: FileType.image);
+
+    if (result != null) {
+      PlatformFile file = result.files.first;
+      if (file.path != null) {
+        final XFile = camera.XFile(file.path.toString());
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PreviewPage(
+                      picture: XFile,
+                    )));
+      }
+      print(file.path);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +105,7 @@ class ImagesPageState extends State<ImagesPage> {
                         builder: (_) => CameraPage(cameras: value))));
               },
               icon: const Icon(Icons.camera_alt)),
+          IconButton(onPressed: pickImage, icon: const Icon(Icons.file_open)),
           IconButton(
               onPressed: () async {
                 storage.delete(key: "jwt");

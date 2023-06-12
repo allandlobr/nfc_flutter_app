@@ -13,6 +13,7 @@ class VideoWidget extends StatefulWidget {
 class VideoWidgetState extends State<VideoWidget> {
   late VideoPlayerController _controller;
   late Future<void> _initializeVideoPlayerFuture;
+  bool isPlaying = false;
 
   @override
   void initState() {
@@ -27,15 +28,25 @@ class VideoWidgetState extends State<VideoWidget> {
     super.dispose();
   }
 
+  void togglePlay() {
+    isPlaying ? _controller.pause() : _controller.play();
+    setState(() {
+      isPlaying = !isPlaying;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
       future: _initializeVideoPlayerFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
+          return InkWell(
+            onTap: togglePlay,
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
           );
         } else {
           return const CircularProgressIndicator();
