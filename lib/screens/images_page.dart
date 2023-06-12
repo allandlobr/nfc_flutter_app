@@ -1,12 +1,25 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:camera/camera.dart' as camera;
+import 'package:solinski_app_flutter/screens/login_page.dart';
 
 import 'image_camera_page.dart';
 
+const serverIp = 'http://localhost:8000';
+const storage = FlutterSecureStorage();
+
 class ImagesPage extends StatefulWidget {
-  const ImagesPage({super.key});
+  const ImagesPage(this.jwt, this.payload, {super.key});
+
+  factory ImagesPage.fromBase64(String jwt) => ImagesPage(
+      jwt,
+      json.decode(
+          ascii.decode(base64.decode(base64.normalize(jwt.split(".")[1])))));
+
+  final String jwt;
+  final Map<String, dynamic> payload;
 
   @override
   ImagesPageState createState() => ImagesPageState();
@@ -37,8 +50,8 @@ class ImagesPageState extends State<ImagesPage> {
   }
 
   void _setImagesUrls() async {
-    final response = await http.get(Uri.parse('http://localhost:8000/images'));
-
+    final response = await http.get(Uri.parse('$serverIp/images'),
+        headers: {"Authorization": widget.jwt});
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       setState(() {
@@ -69,7 +82,14 @@ class ImagesPageState extends State<ImagesPage> {
                     MaterialPageRoute(
                         builder: (_) => CameraPage(cameras: value))));
               },
-              icon: const Icon(Icons.camera_alt))
+              icon: const Icon(Icons.camera_alt)),
+          IconButton(
+              onPressed: () async {
+                storage.delete(key: "jwt");
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => LoginPage()));
+              },
+              icon: const Icon(Icons.logout))
         ],
       ),
       body: GridView.builder(

@@ -42,6 +42,7 @@ dependencies:
   path_provider: ^2.0.15
   flutter_nfc_kit: ^3.3.1
   nfc_manager: ^3.2.0
+  flutter_secure_storage: ^8.0.0
 
 dev_dependencies:
   flutter_test:
